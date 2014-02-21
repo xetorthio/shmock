@@ -16,10 +16,15 @@ $ npm install shmock
 
 ```js
 var shmock = require('shmock');
+var should = require('should');
 
 var mock = shmock(9000);
 
-mock.get("/hello").reply(200, "world!");
+var getFoo = mock.get('/hello').reply(200, 'world!');
+
+// you can verify that the request has been done:
+
+getfoo.isDone.should.be.ok;
 ```
 
 And then you can:
