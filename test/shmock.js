@@ -18,6 +18,18 @@ describe("shmock", function() {
     test.get("/").expect(404, done);
   });
 
+  it("Should return a handler to verify if a request has been made", function(done) {
+    var handler = mock.get("/foo").reply(200);
+
+    handler.isDone.should.not.be.ok;
+    handler.done.should.throw();
+
+    test.get("/foo").expect(200, function() {
+      handler.isDone.should.be.ok;
+      done();
+    });
+  });
+
 
   describe("Request", function() {
     it("Should be able to mock a any http method", function(done) {

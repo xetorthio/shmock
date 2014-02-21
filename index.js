@@ -41,6 +41,7 @@ function Assertion(app, method, path) {
   this.method = method;
   this.path = path;
   this.headers = {};
+  this.isDone = false;
 
   this.parseExpectedRequestBody = function() {
     if(!self.headers["content-type"]) {
@@ -49,6 +50,12 @@ function Assertion(app, method, path) {
       }
     }
     self.requestBody = self.data;
+  }
+}
+
+Assertion.prototype.done = function() {
+  if(!this.isDone) {
+    throw this.method + " " + this.path + " was not made yet.";
   }
 }
 
@@ -87,6 +94,9 @@ Assertion.prototype.reply = function(status, responseBody) {
       return res.send(404, err);
     }
 
+    self.isDone = true;
     res.status(status).send(responseBody);
   });
+
+  return this;
 }
