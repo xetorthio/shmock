@@ -6,6 +6,10 @@ var querystring = require("querystring");
 module.exports = function(port) {
   var app = express(port);
 
+  app.on("error", function(err) {
+    throw err;
+  });
+
   var bodyParser = express.bodyParser();
 
   app.use(bodyParser);
@@ -74,24 +78,16 @@ Assertion.prototype.reply = function(status, responseBody) {
 
   var self = this;
 
-  this.app[this.method](this.path, function(req, res, next) {
+  this.app[this.method](this.path, function(req, res) {
     if(self.requestBody) {
-      try {
-        if(req.text) {
-          req.text.should.eql(self.requestBody);
-        } else {
-          req.body.should.eql(self.requestBody);
-        }
-      } catch(err) {
-        return res.send(404, err);
+      if(req.text) {
+        req.text.should.eql(self.requestBody);
+      } else {
+        req.body.should.eql(self.requestBody);
       }
     }
-    try {
-      for(var name in self.headers) {
-        req.headers[name].should.eql(self.headers[name]);
-      }
-    } catch(err) {
-      return res.send(404, err);
+    for(var name in self.headers) {
+      req.headers[name].should.eql(self.headers[name]);
     }
 
     self.isDone = true;

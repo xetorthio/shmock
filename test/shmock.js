@@ -41,7 +41,8 @@ describe("shmock", function() {
     it("Should fail if expected request body doesn't match", function(done) {
       mock.get("/foo").send("foobar").reply(200);
 
-      test.get("/foo").expect(404, done);
+      test.get("/foo").end.should.throw();
+      done();
     });
 
     it("Should succeed if expected request body match the one sent", function(done) {
@@ -65,7 +66,8 @@ describe("shmock", function() {
     it("Should fail if headers are not matched", function(done) {
       mock.post("/get").set("Content-Type", "application/json").reply(200);
 
-      test.post("/get").expect(404, done);
+      test.post("/get").end.should.throw();
+      done();
     });
 
     it("Should succeed if headers are matched", function(done) {
