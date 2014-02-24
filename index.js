@@ -59,7 +59,7 @@ function Assertion(app, method, path) {
 
 Assertion.prototype.done = function() {
   if(!this.isDone) {
-    throw this.method + " " + this.path + " was not made yet.";
+    throw new Error(this.method + " " + this.path + " was not made yet.");
   }
 }
 
