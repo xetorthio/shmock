@@ -4,7 +4,7 @@ var should = require("should");
 var querystring = require("querystring");
 
 module.exports = function(port) {
-  var app = express(port);
+  var app = express();
 
   app.on("error", function(err) {
     throw err;
@@ -24,7 +24,12 @@ module.exports = function(port) {
     }
   });
 
-  var server = app.listen(port);
+  var server;
+  if(port) {
+    server = app.listen(port);
+  } else {
+    server = app.listen();
+  }
 
   methods.forEach(function(method) {
     server[method] = function(path) {

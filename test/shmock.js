@@ -2,37 +2,45 @@ var supertest = require("supertest");
 var shmock = require("..");
 
 describe("shmock", function() {
-  var mock;
-  var test;
+  it("Should be able to bind to a specific port", function(done) {
+    var mock = shmock(9000);
 
-  before(function() {
-    mock = shmock(9000);
-
-    test = supertest(mock);
+    supertest(mock).get("/").expect(404, done);
   });
 
-  beforeEach(function() {
-    mock.clean();
+  it("Should be able to bind to an arbitrary", function(done) {
+    var mock = shmock();
+
+    supertest(mock).get("/").expect(404, done);
   });
 
-  it("Should be able to bind to a port", function(done) {
-    test.get("/").expect(404, done);
-  });
-
-  it("Should return a handler to verify if a request has been made", function(done) {
-    var handler = mock.get("/foo").reply(200);
-
-    handler.isDone.should.not.be.ok;
-    handler.done.should.throw();
-
-    test.get("/foo").expect(200, function() {
-      handler.isDone.should.be.ok;
-      done();
-    });
-  });
 
 
   describe("Request", function() {
+    var mock;
+    var test;
+
+    before(function() {
+      mock = shmock(9001);
+      test = supertest(mock);
+    });
+
+    beforeEach(function() {
+      mock.clean();
+    });
+
+    it("Should return a handler to verify if a request has been made", function(done) {
+      var handler = mock.get("/foo").reply(200);
+
+      handler.isDone.should.not.be.ok;
+      handler.done.should.throw();
+
+      test.get("/foo").expect(200, function() {
+        handler.isDone.should.be.ok;
+        done();
+      });
+    });
+
     it("Should be able to mock a any http method", function(done) {
       mock.get("/foo").reply(200);
 
