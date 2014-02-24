@@ -115,6 +115,9 @@ Assertion.prototype.reply = function(status, responseBody) {
     }
 
     self.isDone = true;
+
+    // Remove route from express since the expectation was met
+    self.app._router.map[self.method].splice(req._route_index, 1);
     res.status(status).send(responseBody);
   });
 

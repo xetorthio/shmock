@@ -14,8 +14,6 @@ describe("shmock", function() {
     supertest(mock).get("/").expect(404, done);
   });
 
-
-
   describe("Request", function() {
     var mock;
     var test;
@@ -27,6 +25,15 @@ describe("shmock", function() {
 
     beforeEach(function() {
       mock.clean();
+    });
+
+
+    it("Should remove by defailt expectations after meeting them", function(done) {
+      var handler = mock.get("/foo").reply(200);
+
+      test.get("/foo").expect(200, function() {
+        test.get("/foo").expect(404, done);
+      });
     });
 
     it("Should return a handler to verify if a request has been made", function(done) {
