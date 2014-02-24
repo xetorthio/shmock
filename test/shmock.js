@@ -28,7 +28,7 @@ describe("shmock", function() {
     });
 
 
-    it("Should remove by defailt expectations after meeting them", function(done) {
+    it("Should remove by default expectations after meeting them", function(done) {
       var handler = mock.get("/foo").reply(200);
 
       test.get("/foo").expect(200, function() {
