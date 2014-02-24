@@ -68,6 +68,22 @@ Assertion.prototype.send = function(data) {
   return this;
 }
 
+Assertion.prototype.query = function(qs) {
+  var q;
+  if(typeof qs == "string") {
+    q = querystring.parse(qs);
+  } else {
+    q = qs;
+  }
+  if(!this.qs) {
+    this.qs = {};
+  }
+  for(var n in q) {
+    this.qs[n] = "" + q[n];
+  }
+  return this;
+}
+
 Assertion.prototype.set = function(name, value) {
   this.headers[name.toLowerCase()] = value;
   return this;
@@ -79,6 +95,9 @@ Assertion.prototype.reply = function(status, responseBody) {
   var self = this;
 
   this.app[this.method](this.path, function(req, res) {
+    if(self.qs) {
+      req.query.should.eql(self.qs);
+    }
     if(self.requestBody) {
       if(req.text) {
         req.text.should.eql(self.requestBody);

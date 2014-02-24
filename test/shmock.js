@@ -7,6 +7,7 @@ describe("shmock", function() {
 
   before(function() {
     mock = shmock(9000);
+
     test = supertest(mock);
   });
 
@@ -58,9 +59,14 @@ describe("shmock", function() {
     });
 
     it("Should match query parameters", function(done) {
-      mock.post("/get").send("total=10&limit=1").reply(200);
+      mock.post("/get")
+        .query({total: 10, limit: 1})
+        .query({foo: "bar"})
+        .query("a=b&c=d")
+        .query("x=y")
+        .reply(200);
 
-      test.post("/get").send("total=10&limit=1").expect(200, done);
+      test.post("/get").query({total: 10, limit: 1, foo: "bar", a: "b", c: "d", x: "y"}).expect(200, done);
     });
 
     it("Should fail if headers are not matched", function(done) {
