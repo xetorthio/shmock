@@ -10,9 +10,9 @@ module.exports = function(port) {
     throw err;
   });
 
-  var bodyParser = express.bodyParser();
+  app.use(express.json());
+  app.use(express.urlencoded());
 
-  app.use(bodyParser);
   app.use(function(req, res, next){
     if (req.is('text/*')) {
       req.text = '';
