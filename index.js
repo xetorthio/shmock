@@ -2,6 +2,8 @@ var express = require("express");
 var methods = require("methods");
 var should = require("should");
 var querystring = require("querystring");
+var EventEmitter = require("events").EventEmitter;
+var util = require("util");
 
 module.exports = function(port) {
   var app = express();
@@ -62,12 +64,6 @@ function Assertion(app, method, path) {
   }
 }
 
-Assertion.prototype.done = function() {
-  if(!this.isDone) {
-    throw new Error(this.method + " " + this.path + " was not made yet.");
-  }
-}
-
 Assertion.prototype.send = function(data) {
   this.data = data;
   return this;
@@ -114,12 +110,52 @@ Assertion.prototype.reply = function(status, responseBody) {
       req.headers[name].should.eql(self.headers[name]);
     }
 
-    self.isDone = true;
+    self.handler.emit("done");
 
     // Remove route from express since the expectation was met
     self.app._router.map[self.method].splice(req._route_index, 1);
     res.status(status).send(responseBody);
   });
 
-  return this;
+  this.handler = new Handler(this);
+  return this.handler;
+}
+
+function Handler(assertion) {
+  this.defaults = {
+    waitTimeout: 2000
+  };
+  var self = this;
+  this.assertion = assertion;
+  this.isDone = false;
+  this.on("done", function() {
+    self.isDone = true;
+  });
+}
+
+util.inherits(Handler, EventEmitter);
+
+Handler.prototype.done = function() {
+  if(!this.isDone) {
+    throw new Error(this.assertion.method + " " + this.assertion.path + " was not made yet.");
+  }
+}
+
+Handler.prototype.wait = function(ms, fn) {
+  if(!fn && typeof ms == "function") {
+    fn = ms;
+    ms = this.defaults.waitTimeout;
+  }
+
+  var self = this;
+  var timeout = null;
+  var cb = function() {
+    clearTimeout(timeout);
+    fn();
+  }
+  this.once("done", cb);
+  timeout = setTimeout(function() {
+    self.removeListener("done", cb);
+    fn(new Error(self.assertion.method + " " + self.assertion.path + " was not called within " + ms + "ms."));
+  }, ms);
 }

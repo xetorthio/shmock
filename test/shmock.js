@@ -96,6 +96,34 @@ describe("shmock", function() {
 
       test.post("/get").set("Content-Type", "application/json").send({}).expect(200, done);
     });
-  });
 
+    it("Should be able to wait a specificed number of ms for expectation to be met", function(done) {
+      var h = mock.get("/foo").reply(200);
+
+      setTimeout(function() {
+        test.get("/foo").expect(200, function() {});
+      }, 20);
+
+      h.wait(10, function(err) {
+        err.should.not.be.null;
+
+        h.wait(30, done);
+      });
+    });
+
+    it("Should be able to wait a default number of ms for expectation to be met", function(done) {
+      var h = mock.get("/foo").reply(200);
+
+      h.defaults.waitTimeout = 10;
+
+      setTimeout(function() {
+        test.get("/foo").expect(200, function() {});
+      }, 20);
+
+      h.wait(function(err) {
+        err.should.not.be.null;
+        done();
+      });
+    });
+  });
 });
