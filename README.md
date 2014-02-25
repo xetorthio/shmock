@@ -16,25 +16,78 @@
 $ npm install shmock
 ```
 
-## Example
+## Usage
+
+### Initialize with or without port
 
 ```js
 var shmock = require('shmock');
-var should = require('should');
 
-var mock = shmock(9000);
+var mock = shmock(); // will give some arbitrary port
 
-var getFoo = mock.get('/hello').reply(200, 'world!');
-
-// you can verify that the request has been done:
-
-getfoo.isDone.should.be.ok;
+var mock2 = shmock(9000); // will use port 9000
 ```
 
-And then you can:
+### Define expectations
 
-```bash
-curl http://localhost:9000/hello
+
+#### On http methods
+
+```js
+mock.get("/foo").reply(200, "bar");
+```
+
+#### On http headers
+
+```js
+mock.get("/foo").set("Authorization", "123456").reply(200, "bar");
+```
+
+#### On querystring parameters
+
+```js
+mock.get("/foo").query("a=bi&c=d").reply(200, "bar");
+mock.get("/foo").query({a: "b", c: "d"}).reply(200, "bar");
+```
+
+#### On request body
+
+```js
+mock.post("/foo").send({a: "b"}).reply(200, "bar");
+mock.post("/foo").send("123456").reply(200, "bar");
+```
+
+### Make assertions on the handler
+
+#### Check if expectation has been met
+
+```js
+var handler = mock.get("/foo").reply(200);
+...
+...
+handler.isDone.should.be.ok;
+handler.done(); // Throws an error if isDone is false
+```
+
+#### Wait for expectation to be met
+```js
+var handler = mock.get("/foo").reply(200);
+...
+...
+handler.wait(function(err) {
+  if(err) {
+    // A default timeout of 2 seconds has passed and still the expectation hasn't been bet
+  }
+});
+```
+
+You can also specify a timeout in ms:
+```js
+handler.wait(200, function(err) { ... });
+```
+Or if using mocha:
+```js
+handler.wait(200, done);
 ```
 
 ## License
