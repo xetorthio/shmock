@@ -125,5 +125,15 @@ describe("shmock", function() {
         done();
       });
     });
+
+    it("Should be able to delay a reply for a specified amount of ms", function(done) {
+      var h = mock.get("/foo").delay(30).reply(200);
+
+      test.get("/foo").timeout(10).end(function(err) {
+        err.should.not.be.null;
+
+        test.get("/foo").timeout(50).expect(200, done);
+      });
+    });
   });
 });

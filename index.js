@@ -90,6 +90,12 @@ Assertion.prototype.set = function(name, value) {
   return this;
 }
 
+
+Assertion.prototype.delay = function(ms) {
+  this.delay = ms;
+  return this;
+}
+
 Assertion.prototype.reply = function(status, responseBody) {
   this.parseExpectedRequestBody();
 
@@ -110,11 +116,18 @@ Assertion.prototype.reply = function(status, responseBody) {
       req.headers[name].should.eql(self.headers[name]);
     }
 
-    self.handler.emit("done");
+    var reply = function() {
+        self.handler.emit("done");
 
-    // Remove route from express since the expectation was met
-    self.app._router.map[self.method].splice(req._route_index, 1);
-    res.status(status).send(responseBody);
+        // Remove route from express since the expectation was met
+        self.app._router.map[self.method].splice(req._route_index, 1);
+        res.status(status).send(responseBody);
+      };
+    if(self.delay) {
+      setTimeout(reply, self.delay);
+    } else {
+      reply();
+    }
   });
 
   this.handler = new Handler(this);

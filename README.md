@@ -57,6 +57,11 @@ mock.post("/foo").send({a: "b"}).reply(200, "bar");
 mock.post("/foo").send("123456").reply(200, "bar");
 ```
 
+#### Add a delay to the reply
+```js
+mock.get("/foo").delay(500).reply(200);
+```
+
 ### Make assertions on the handler
 
 #### Check if expectation has been met
