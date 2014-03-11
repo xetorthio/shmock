@@ -135,8 +135,8 @@ describe("shmock", function() {
         test.get("/foo").timeout(50).expect(200, function(err) {
           (err == null).should.be.ok;
 
-          mock.get("/foo").reply(200);
-          test.get("/foo").timeout(10).expect(200, done);
+          mock.get("/foobar").reply(200);
+          test.get("/foobar").timeout(10).expect(200, done);
         });
       });
     });
