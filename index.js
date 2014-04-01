@@ -53,6 +53,7 @@ function Assertion(app, method, path) {
   this.path = path;
   this.headers = {};
   this.isDone = false;
+  this.removeWhenMet = true;
 
   this.parseExpectedRequestBody = function() {
     if(!self.headers["content-type"]) {
@@ -96,6 +97,11 @@ Assertion.prototype.delay = function(ms) {
   return this;
 }
 
+Assertion.prototype.persist = function() {
+  this.removeWhenMet = false;
+  return this;
+}
+
 Assertion.prototype.reply = function(status, responseBody) {
   this.parseExpectedRequestBody();
 
@@ -120,7 +126,8 @@ Assertion.prototype.reply = function(status, responseBody) {
         self.handler.emit("done");
 
         // Remove route from express since the expectation was met
-        self.app._router.map[self.method].splice(req._route_index, 1);
+        // Unless this mock is suposed to persist
+        if (self.removeWhenMet) self.app._router.map[self.method].splice(req._route_index, 1);
         res.status(status).send(responseBody);
       };
     if(self.delay) {
