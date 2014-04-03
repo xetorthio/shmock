@@ -36,6 +36,14 @@ describe("shmock", function() {
       });
     });
 
+    it("Should not remove expectations if user needs multiple repetition", function(done) {
+      var handler = mock.get("/foo").repeatAny().reply(200);
+
+      test.get("/foo").expect(200, function() {
+        test.get("/foo").expect(200, done);
+      });
+    });
+
     it("Should return a handler to verify if a request has been made", function(done) {
       var handler = mock.get("/foo").reply(200);
 

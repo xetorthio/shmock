@@ -120,7 +120,9 @@ Assertion.prototype.reply = function(status, responseBody) {
         self.handler.emit("done");
 
         // Remove route from express since the expectation was met
-        self.app._router.map[self.method].splice(req._route_index, 1);
+        console.log(self.maintainAfterMet);
+        if (!self.maintainAfterMet)
+          self.app._router.map[self.method].splice(req._route_index, 1); 
         res.status(status).send(responseBody);
       };
     if(self.delay) {
@@ -132,6 +134,11 @@ Assertion.prototype.reply = function(status, responseBody) {
 
   this.handler = new Handler(this);
   return this.handler;
+}
+
+Assertion.prototype.repeatAny = function() {
+  this.maintainAfterMet = true;  
+  return this;
 }
 
 function Handler(assertion) {
