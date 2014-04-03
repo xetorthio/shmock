@@ -118,10 +118,9 @@ Assertion.prototype.reply = function(status, responseBody) {
 
     var reply = function() {
         self.handler.emit("done");
-
-        // Remove route from express since the expectation was met
-        console.log(self.maintainAfterMet);
+        
         if (!self.maintainAfterMet)
+          // Remove route from express since the expectation was met
           self.app._router.map[self.method].splice(req._route_index, 1); 
         res.status(status).send(responseBody);
       };
