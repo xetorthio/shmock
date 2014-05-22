@@ -36,6 +36,20 @@ describe("shmock", function() {
       });
     });
 
+    it("Should not remove expectations after meeting them if they were persisted", function(done) {
+      var handler = mock.get("/persisted").persist().reply(200);
+
+      test.get("/persisted").expect(200, function() {
+        test.get("/persisted").expect(200).end(function(error, response) {
+          test.get("/persisted").expect(200).end(function(error, response) {
+            if (error) return done(error);
+            handler.isDone.should.be.ok;
+            done();
+          });     
+        });
+      });
+    });
+
     it("Should return a handler to verify if a request has been made", function(done) {
       var handler = mock.get("/foo").reply(200);
 
