@@ -1,6 +1,6 @@
 var express = require("express");
 var methods = require("methods");
-var should = require("should");
+var assert = require('assert');
 var querystring = require("querystring");
 var EventEmitter = require("events").EventEmitter;
 var util = require("util");
@@ -109,17 +109,17 @@ Assertion.prototype.reply = function(status, responseBody) {
 
   this.app[this.method](this.path, function(req, res) {
     if(self.qs) {
-      req.query.should.eql(self.qs);
+      assert.deepEqual(req.query, self.qs);
     }
     if(self.requestBody) {
       if(req.text) {
-        req.text.should.eql(self.requestBody);
+        assert.deepEqual(req.text, self.requestBody);
       } else {
-        req.body.should.eql(self.requestBody);
+        assert.deepEqual(req.body, self.requestBody);
       }
     }
     for(var name in self.headers) {
-      req.headers[name].should.eql(self.headers[name]);
+      assert.deepEqual(req.headers[name], self.headers[name]);
     }
 
     var reply = function() {
