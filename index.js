@@ -61,7 +61,6 @@ function Assertion(app, method, path) {
   this.method = method;
   this.path = path;
   this.headers = {};
-  this.isDone = false;
   this.removeWhenMet = true;
 
   this.parseExpectedRequestBody = function() {
@@ -162,8 +161,10 @@ function Handler(assertion) {
   var self = this;
   this.assertion = assertion;
   this.isDone = false;
+  this.responseCount = 0;
   this.on("done", function() {
     self.isDone = true;
+    self.responseCount++;
   });
 }
 
@@ -173,6 +174,10 @@ Handler.prototype.done = function() {
   if(!this.isDone) {
     throw new Error(this.assertion.method + " " + this.assertion.path + " was not made yet.");
   }
+}
+
+Handler.prototype.count = function() {
+  return this.responseCount;
 }
 
 Handler.prototype.wait = function(ms, fn) {
