@@ -50,6 +50,18 @@ describe("shmock", function() {
       });
     });
 
+    it("Should count responses made by same assertion", function(done) {
+      var handler = mock.get("/persisted").persist().reply(200);
+
+      test.get("/persisted").expect(200, function() {
+        handler.count().should.equal(1);
+        test.get("/persisted").expect(200).end(function(error, response) {
+          handler.count().should.equal(2);
+          done();
+        });     
+      });
+    });
+
     it("Should return a handler to verify if a request has been made", function(done) {
       var handler = mock.get("/foo").reply(200);
 
