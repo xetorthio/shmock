@@ -4,6 +4,7 @@ var assert = require('assert');
 var querystring = require("querystring");
 var EventEmitter = require("events").EventEmitter;
 var util = require("util");
+var deepEqual = require('deep-equal');
 
 module.exports = function(port) {
   var app = express();
@@ -52,7 +53,6 @@ function Assertion(app, method, path) {
   this.method = method;
   this.path = path;
   this.headers = {};
-  this.isDone = false;
   this.removeWhenMet = true;
 
   this.parseExpectedRequestBody = function() {
@@ -86,11 +86,15 @@ Assertion.prototype.query = function(qs) {
   return this;
 }
 
+Assertion.prototype.ifQuery = function(queryObject) {
+  this.queryObject = queryObject;
+  return this;
+}
+
 Assertion.prototype.set = function(name, value) {
   this.headers[name.toLowerCase()] = value;
   return this;
 }
-
 
 Assertion.prototype.delay = function(ms) {
   this.delay = ms;
@@ -102,44 +106,53 @@ Assertion.prototype.persist = function() {
   return this;
 }
 
-Assertion.prototype.reply = function(status, responseBody) {
+Assertion.prototype.reply = Assertion.prototype.thenReply = function(status, responseBody) {
   this.parseExpectedRequestBody();
 
   var self = this;
+  this.app[this.method](this.path, function(req, res, next) {
+    self.testAssertions(req);
 
-  this.app[this.method](this.path, function(req, res) {
-    if(self.qs) {
-      assert.deepEqual(req.query, self.qs);
+    if (self.queryObject && !deepEqual(req.query,self.queryObject)) {
+      next();
     }
-    if(self.requestBody) {
-      if(req.text) {
-        assert.deepEqual(req.text, self.requestBody);
+    else {
+      var reply = function() {
+          self.handler.emit("done");
+  
+          // Remove route from express since the expectation was met
+          // Unless this mock is suposed to persist
+          if (self.removeWhenMet) self.app._router.map[self.method].splice(req._route_index, 1);
+          res.status(status).send(responseBody);
+        };
+      if(self.delay) {
+        setTimeout(reply, self.delay);
       } else {
-        assert.deepEqual(req.body, self.requestBody);
+        reply();
       }
-    }
-    for(var name in self.headers) {
-      assert.deepEqual(req.headers[name], self.headers[name]);
-    }
-
-    var reply = function() {
-        self.handler.emit("done");
-
-        // Remove route from express since the expectation was met
-        // Unless this mock is suposed to persist
-        if (self.removeWhenMet) self.app._router.map[self.method].splice(req._route_index, 1);
-        res.status(status).send(responseBody);
-      };
-    if(self.delay) {
-      setTimeout(reply, self.delay);
-    } else {
-      reply();
     }
   });
 
   this.handler = new Handler(this);
   return this.handler;
 }
+
+Assertion.prototype.testAssertions = function(req) {
+  if(this.qs) {
+    assert.deepEqual(req.query, this.qs);
+  }
+  if(this.requestBody) {
+    if(req.text) {
+      assert.deepEqual(req.text, this.requestBody);
+    } else {
+      assert.deepEqual(req.body, this.requestBody);
+    }
+  }
+  for(var name in this.headers) {
+    assert.deepEqual(req.headers[name], this.headers[name]);
+  }
+}
+
 
 function Handler(assertion) {
   this.defaults = {
@@ -148,8 +161,10 @@ function Handler(assertion) {
   var self = this;
   this.assertion = assertion;
   this.isDone = false;
+  this.responseCount = 0;
   this.on("done", function() {
     self.isDone = true;
+    self.responseCount++;
   });
 }
 
@@ -159,6 +174,10 @@ Handler.prototype.done = function() {
   if(!this.isDone) {
     throw new Error(this.assertion.method + " " + this.assertion.path + " was not made yet.");
   }
+}
+
+Handler.prototype.count = function() {
+  return this.responseCount;
 }
 
 Handler.prototype.wait = function(ms, fn) {
