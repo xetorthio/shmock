@@ -63,6 +63,19 @@ mock.post("/foo").send({a: "b"}).reply(200, "bar");
 mock.post("/foo").send("123456").reply(200, "bar");
 ```
 
+#### Register multiple handlers on the same path
+```js
+var handler1 = mock.get("/foo").skipUnmatchedRequests()
+  .persist()
+  .query({param1: "request1"})
+  .reply(200, {name: "response1"});
+
+var handler2 = mock.get("/foo").skipUnmatchedRequests()
+  .persist()
+  .query({param1: "request2"})
+  .reply(200, {name: "response2"});
+```
+
 #### Add a delay to the reply
 ```js
 mock.get("/foo").delay(500).reply(200);
