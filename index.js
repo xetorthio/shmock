@@ -112,19 +112,19 @@ Assertion.prototype.reply = function(status, responseBody) {
     var assertionsPassed = self.testAssertions(req, next);
 
     if (assertionsPassed) {
+
+      // Remove route from express since the expectation was met
+      // Unless this mock is suposed to persist
+      if (self.removeWhenMet) {
+        self.app._router.map[self.method].splice(req._route_index, 1);
+      }
+
       var reply = function() {
         self.handler.emit("done");
-
-        // Remove route from express since the expectation was met
-        // Unless this mock is suposed to persist
-        if (self.removeWhenMet) {
-          self.app._router.map[self.method].splice(req._route_index, 1);
-        }
-
         res.status(status).send(responseBody);
       };
 
-      if(self.delay) {
+      if(self.hasOwnProperty("delay")) {
         setTimeout(reply, self.delay);
       } else {
         reply();
