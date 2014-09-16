@@ -102,12 +102,16 @@ Assertion.prototype.persist = function() {
   return this;
 }
 
-Assertion.prototype.reply = function(status, responseBody) {
+Assertion.prototype.reply = function(status, responseBody, inspect) {
   this.parseExpectedRequestBody();
 
   var self = this;
 
   this.app[this.method](this.path, function(req, res) {
+
+    if (typeof inspect === 'function')
+      inspect(req);
+
     if(self.qs) {
       assert.deepEqual(req.query, self.qs);
     }
