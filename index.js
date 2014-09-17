@@ -102,15 +102,14 @@ Assertion.prototype.persist = function() {
   return this;
 }
 
-Assertion.prototype.reply = function(status, responseBody, inspect) {
+Assertion.prototype.reply = function(status, responseBody) {
   this.parseExpectedRequestBody();
 
   var self = this;
 
   this.app[this.method](this.path, function(req, res) {
 
-    if (typeof inspect === 'function')
-      inspect(req);
+    self.request = req;
 
     if(self.qs) {
       assert.deepEqual(req.query, self.qs);
@@ -170,12 +169,11 @@ Handler.prototype.wait = function(ms, fn) {
     fn = ms;
     ms = this.defaults.waitTimeout;
   }
-
   var self = this;
   var timeout = null;
   var cb = function() {
     clearTimeout(timeout);
-    fn();
+    fn(null, self.assertion.request);
   }
   this.once("done", cb);
   timeout = setTimeout(function() {
