@@ -156,6 +156,22 @@ describe("shmock", function() {
       });
     });
 
+    it("Should be able to delay a reply for a random amount of ms", function(done) {
+      mock.get("/foo").randomDelay(30, 100).reply(200);
+
+      test.get("/foo").timeout(10).end(function(err) {
+        err.should.not.be.null;
+
+        test.get("/foo").timeout(120).expect(200, function(err) {
+          console.log(err);
+          (err == null).should.be.ok;
+
+          mock.get("/foobar").reply(200);
+          test.get("/foobar").timeout(10).expect(200, done);
+        });
+      });
+    });
+
     it('Should forward the received request to the wait callback', function(done) {
       var h = mock.post("/foo").reply(200);
 
