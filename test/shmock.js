@@ -1,5 +1,6 @@
 var supertest = require("supertest");
 var shmock = require("..");
+var should = require('should');
 
 describe("shmock", function() {
   it("Should be able to bind to a specific port", function(done) {
@@ -153,6 +154,35 @@ describe("shmock", function() {
           test.get("/foobar").timeout(10).expect(200, done);
         });
       });
+    });
+
+    it("Should be able to delay a reply for a random amount of ms", function(done) {
+      mock.get("/foo").randomDelay(30, 100).reply(200);
+
+      test.get("/foo").timeout(10).end(function(err) {
+        err.should.not.be.null;
+
+        test.get("/foo").timeout(120).expect(200, function(err) {
+          console.log(err);
+          (err == null).should.be.ok;
+
+          mock.get("/foobar").reply(200);
+          test.get("/foobar").timeout(10).expect(200, done);
+        });
+      });
+    });
+
+    it('Should forward the received request to the wait callback', function(done) {
+      var h = mock.post("/foo").reply(200);
+
+      h.defaults.waitTimeout = 10;
+
+      h.wait(function(err, req) {
+        req.body.x.should.be.equal(1);
+        done();
+      });
+
+      test.post("/foo").send({x: 1}).expect(200, function() {});
     });
   });
 });

@@ -91,6 +91,12 @@ Assertion.prototype.set = function(name, value) {
   return this;
 }
 
+Assertion.prototype.randomDelay = function(min, max) {
+  this.delay = 1;
+  this.minDelay = min;
+  this.maxDelay = max;
+  return this;
+}
 
 Assertion.prototype.delay = function(ms) {
   this.delay = ms;
@@ -108,6 +114,9 @@ Assertion.prototype.reply = function(status, responseBody) {
   var self = this;
 
   this.app[this.method](this.path, function(req, res) {
+
+    self.request = req;
+
     if(self.qs) {
       assert.deepEqual(req.query, self.qs);
     }
@@ -131,7 +140,11 @@ Assertion.prototype.reply = function(status, responseBody) {
         res.status(status).send(responseBody);
       };
     if(self.delay) {
-      setTimeout(reply, self.delay);
+      var coef = 1;
+      if (self.minDelay && self.maxDelay) {
+        coef = Math.floor(Math.random() * (self.maxDelay - self.minDelay + 1)) + self.minDelay;
+      }
+      setTimeout(reply, self.delay * coef);
     } else {
       reply();
     }
@@ -166,12 +179,11 @@ Handler.prototype.wait = function(ms, fn) {
     fn = ms;
     ms = this.defaults.waitTimeout;
   }
-
   var self = this;
   var timeout = null;
   var cb = function() {
     clearTimeout(timeout);
-    fn();
+    fn(null, self.assertion.request);
   }
   this.once("done", cb);
   timeout = setTimeout(function() {
