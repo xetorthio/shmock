@@ -95,6 +95,21 @@ Or if using mocha:
 handler.wait(200, done);
 ```
 
+### Custom middleware
+Custom middlewares can be injected into the Express stack in order to perform arbitrary manipulations on mock requests, for instance:
+
+```javascript
+var shmock = shmock(9100, [function(req, res, next) {
+  // do something with req/res then call next
+  next();
+}, function(req, res, next) {
+  // do something else with the request object
+  next()
+}]);
+```
+
+As you would expect the arguments are the default arguments passed to request middleware by Express, so in order they are: `req` (the request object); `res` (the response object); and `done` (the callback).
+
 ## License
 
   MIT
