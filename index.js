@@ -102,7 +102,7 @@ Assertion.prototype.set = function(name, value) {
 
 
 Assertion.prototype.delay = function(ms) {
-  this.delay = ms;
+  this.delay_ms = ms;
   return this;
 }
 
@@ -139,8 +139,8 @@ Assertion.prototype.reply = function(status, responseBody) {
         if (self.removeWhenMet) self.app._router.map[self.method].splice(req._route_index, 1);
         res.status(status).send(responseBody);
       };
-    if(self.delay) {
-      setTimeout(reply, self.delay);
+    if(self.delay_ms) {
+      setTimeout(reply, self.delay_ms);
     } else {
       reply();
     }
