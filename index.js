@@ -5,7 +5,7 @@ var querystring = require("querystring");
 var EventEmitter = require("events").EventEmitter;
 var util = require("util");
 
-module.exports = function(port) {
+module.exports = function(port, middlewares) {
   var app = express();
 
   app.on("error", function(err) {
@@ -14,6 +14,15 @@ module.exports = function(port) {
 
   app.use(express.json());
   app.use(express.urlencoded());
+
+  // If the user has defined custom middlewares...
+  if(middlewares) {
+    // Iterate over them...
+    middlewares.forEach(function(middleware) {
+      // ... and injet them into the Express app
+      app.use(middleware);
+    });
+  }
 
   app.use(function(req, res, next){
     if (req.is('text/*')) {

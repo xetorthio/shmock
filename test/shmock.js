@@ -1,5 +1,6 @@
 var supertest = require("supertest");
 var shmock = require("..");
+var assert = require("assert");
 
 describe("shmock", function() {
   it("Should be able to bind to a specific port", function(done) {
@@ -12,6 +13,35 @@ describe("shmock", function() {
     var mock = shmock();
 
     supertest(mock).get("/").expect(404, done);
+  });
+
+  describe("Custom middlwares", function() {
+
+    it("Should accept an array of a single middleware", function (done) {
+      var mock = shmock(9089, [function (req, res, next) {
+        assert(typeof req === "object", "that the middleware is passed the req object");
+        assert(typeof res === "object", "that the middleware is passed the res object");
+        assert(typeof next === "function", "that the middleware is next callback");
+        next();
+      }]);
+      supertest(mock).get("/").expect(404, done);
+    });
+
+    it("Should accept an array of multiple middlewares", function (done) {
+      var mock = shmock(9090, [function (req, res, next) {
+        assert(typeof req === "object", "that the middleware is passed the req object");
+        assert(typeof res === "object", "that the middleware is passed the res object");
+        assert(typeof next === "function", "that the middleware is next callback");
+        next();
+      }, function (req, res, next) {
+        assert(typeof req === "object", "that the middleware is passed the req object");
+        assert(typeof res === "object", "that the middleware is passed the res object");
+        assert(typeof next === "function", "that the middleware is next callback");
+        next();
+      }]);
+      supertest(mock).get("/").expect(404, done);
+    });
+
   });
 
   describe("Request", function() {
