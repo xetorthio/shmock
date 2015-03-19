@@ -43,6 +43,12 @@ mock.get("/foo").reply(200, "bar");
 mock.get("/foo").set("Authorization", "123456").reply(200, "bar");
 ```
 
+#### Specifying response headers
+
+```js
+mock.get("/foo").set("Authorization", "123456").reply(200, "bar", {"X-my-header", "My header value"});
+```
+
 #### On querystring parameters
 
 ```js
