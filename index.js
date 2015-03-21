@@ -111,7 +111,7 @@ Assertion.prototype.persist = function() {
   return this;
 }
 
-Assertion.prototype.reply = function(status, responseBody) {
+Assertion.prototype.reply = function(status, responseBody, responseHeaders) {
   this.parseExpectedRequestBody();
 
   var self = this;
@@ -131,12 +131,17 @@ Assertion.prototype.reply = function(status, responseBody) {
       assert.deepEqual(req.headers[name], self.headers[name]);
     }
 
+    if(responseHeaders) {
+      res.set(responseHeaders);
+    }
+
     var reply = function() {
         self.handler.emit("done");
 
         // Remove route from express since the expectation was met
         // Unless this mock is suposed to persist
         if (self.removeWhenMet) self.app._router.map[self.method].splice(req._route_index, 1);
+
         res.status(status).send(responseBody);
       };
     if(self.delay_ms) {

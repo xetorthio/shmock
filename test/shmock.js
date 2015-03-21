@@ -75,7 +75,8 @@ describe("shmock", function() {
             if (error) return done(error);
             handler.isDone.should.be.ok;
             done();
-          });     
+
+          });
         });
       });
     });
@@ -139,6 +140,12 @@ describe("shmock", function() {
       mock.post("/get").set("Content-Type", "application/json").reply(200);
 
       test.post("/get").set("Content-Type", "application/json").send({}).expect(200, done);
+    });
+
+    it("Should allow to specify response headers", function(done) {
+      mock.post("/get").reply(200,'Hello world',{'X-my-header':'My header value'});
+
+      test.post("/get").expect('X-my-header', 'My header value').expect(200, done);
     });
 
     it("Should be able to wait a specificed number of ms for expectation to be met", function(done) {
