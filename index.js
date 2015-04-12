@@ -1,9 +1,11 @@
 var express = require("express");
 var methods = require("methods");
 var assert = require('assert');
+var bodyParser = require("body-parser");
 var querystring = require("querystring");
 var EventEmitter = require("events").EventEmitter;
 var util = require("util");
+var lodash = require("lodash");
 
 module.exports = function(port, middlewares) {
   var app = express();
@@ -12,11 +14,11 @@ module.exports = function(port, middlewares) {
     throw err;
   });
 
-  app.use(express.json());
-  app.use(express.urlencoded());
+  app.use(bodyParser.json());
+  app.use(bodyParser.urlencoded({ extended: true }));
 
   // If the user has defined custom middlewares...
-  if(middlewares) {
+  if (middlewares) {
     // Iterate over them...
     middlewares.forEach(function(middleware) {
       // ... and injet them into the Express app
@@ -24,11 +26,13 @@ module.exports = function(port, middlewares) {
     });
   }
 
-  app.use(function(req, res, next){
+  app.use(function(req, res, next) {
     if (req.is('text/*')) {
       req.text = '';
       req.setEncoding('utf8');
-      req.on('data', function(chunk){ req.text += chunk });
+      req.on('data', function(chunk) {
+        req.text += chunk
+      });
       req.on('end', next);
     } else {
       next();
@@ -36,7 +40,7 @@ module.exports = function(port, middlewares) {
   });
 
   var server;
-  if(port) {
+  if (port) {
     server = app.listen(port);
   } else {
     server = app.listen();
@@ -49,11 +53,17 @@ module.exports = function(port, middlewares) {
   });
 
   server.clean = function() {
-    app._router.map = {};
-  }
+    var len = app._router.stack.length;
+    for (var i = len - 1; i >= 0; i--) {
+      if (app._router.stack[i].route === undefined) {
+        continue;
+      }
+      app._router.stack.splice(i, 1);
+    }
+  };
 
   return server;
-}
+};
 
 function Assertion(app, method, path) {
   var self = this;
@@ -65,8 +75,8 @@ function Assertion(app, method, path) {
   this.removeWhenMet = true;
 
   this.parseExpectedRequestBody = function() {
-    if(!self.headers["content-type"]) {
-      if(typeof self.data == "string") {
+    if (!self.headers["content-type"]) {
+      if (typeof self.data == "string") {
         return self.requestBody = querystring.parse(self.data);
       }
     }
@@ -77,74 +87,91 @@ function Assertion(app, method, path) {
 Assertion.prototype.send = function(data) {
   this.data = data;
   return this;
-}
+};
 
 Assertion.prototype.query = function(qs) {
   var q;
-  if(typeof qs == "string") {
+  if (typeof qs == "string") {
     q = querystring.parse(qs);
   } else {
     q = qs;
   }
-  if(!this.qs) {
+  if (!this.qs) {
     this.qs = {};
   }
-  for(var n in q) {
+  for (var n in q) {
     this.qs[n] = "" + q[n];
   }
   return this;
-}
+};
 
 Assertion.prototype.set = function(name, value) {
   this.headers[name.toLowerCase()] = value;
   return this;
-}
+};
 
 
 Assertion.prototype.delay = function(ms) {
   this.delay_ms = ms;
   return this;
-}
+};
 
 Assertion.prototype.persist = function() {
   this.removeWhenMet = false;
   return this;
-}
+};
 
 Assertion.prototype.reply = function(status, responseBody, responseHeaders) {
   this.parseExpectedRequestBody();
 
   var self = this;
 
-  this.app[this.method](this.path, function(req, res) {
-    if(self.qs) {
-      assert.deepEqual(req.query, self.qs);
-    }
-    if(self.requestBody) {
-      if(req.text) {
-        assert.deepEqual(req.text, self.requestBody);
-      } else {
-        assert.deepEqual(req.body, self.requestBody);
+  this.app[this.method](this.path, function(req, res, next) {
+    try {
+      if (self.qs) {
+        assert.deepEqual(req.query, self.qs);
       }
-    }
-    for(var name in self.headers) {
-      assert.deepEqual(req.headers[name], self.headers[name]);
-    }
 
-    if(responseHeaders) {
+      if (self.requestBody) {
+        if (req.text) {
+          assert.deepEqual(req.text, self.requestBody);
+        } else {
+          assert.deepEqual(req.body, self.requestBody);
+        }
+      }
+      for (var name in self.headers) {
+        assert.deepEqual(req.headers[name], self.headers[name]);
+      }
+    } catch (e) {
+      next();
+      return;
+    }
+    if (responseHeaders) {
       res.set(responseHeaders);
     }
 
     var reply = function() {
-        self.handler.emit("done");
+      self.handler.emit("done");
 
-        // Remove route from express since the expectation was met
-        // Unless this mock is suposed to persist
-        if (self.removeWhenMet) self.app._router.map[self.method].splice(req._route_index, 1);
+      // Remove route from express since the expectation was met
+      // Unless this mock is suposed to persist
+      if (self.removeWhenMet) {
+        for (var i = 0; i < self.app._router.stack.length; i++) {
+          if (self.app._router.stack[i].route === undefined) {
+            continue;
+          }
+          var orig = self.app._router.stack[i].route.stack[0];
+          var dest = req.route.stack[0];
+          if (lodash.isEqual(orig, dest)) {
+            break;
+          }
+        }
+        self.app._router.stack.splice(i, 1);
+      }
 
-        res.status(status).send(responseBody);
-      };
-    if(self.delay_ms) {
+      res.status(status).send(responseBody);
+    };
+    if (self.delay_ms) {
       setTimeout(reply, self.delay_ms);
     } else {
       reply();
@@ -170,13 +197,13 @@ function Handler(assertion) {
 util.inherits(Handler, EventEmitter);
 
 Handler.prototype.done = function() {
-  if(!this.isDone) {
+  if (!this.isDone) {
     throw new Error(this.assertion.method + " " + this.assertion.path + " was not made yet.");
   }
 }
 
 Handler.prototype.wait = function(ms, fn) {
-  if(!fn && typeof ms == "function") {
+  if (!fn && typeof ms == "function") {
     fn = ms;
     ms = this.defaults.waitTimeout;
   }
@@ -186,10 +213,10 @@ Handler.prototype.wait = function(ms, fn) {
   var cb = function() {
     clearTimeout(timeout);
     fn();
-  }
+  };
   this.once("done", cb);
   timeout = setTimeout(function() {
     self.removeListener("done", cb);
     fn(new Error(self.assertion.method + " " + self.assertion.path + " was not called within " + ms + "ms."));
   }, ms);
-}
+};

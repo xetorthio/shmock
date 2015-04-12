@@ -17,8 +17,8 @@ describe("shmock", function() {
 
   describe("Custom middlwares", function() {
 
-    it("Should accept an array of a single middleware", function (done) {
-      var mock = shmock(9089, [function (req, res, next) {
+    it("Should accept an array of a single middleware", function(done) {
+      var mock = shmock(9089, [function(req, res, next) {
         assert(typeof req === "object", "that the middleware is passed the req object");
         assert(typeof res === "object", "that the middleware is passed the res object");
         assert(typeof next === "function", "that the middleware is next callback");
@@ -27,13 +27,13 @@ describe("shmock", function() {
       supertest(mock).get("/").expect(404, done);
     });
 
-    it("Should accept an array of multiple middlewares", function (done) {
-      var mock = shmock(9090, [function (req, res, next) {
+    it("Should accept an array of multiple middlewares", function(done) {
+      var mock = shmock(9090, [function(req, res, next) {
         assert(typeof req === "object", "that the middleware is passed the req object");
         assert(typeof res === "object", "that the middleware is passed the res object");
         assert(typeof next === "function", "that the middleware is next callback");
         next();
-      }, function (req, res, next) {
+      }, function(req, res, next) {
         assert(typeof req === "object", "that the middleware is passed the req object");
         assert(typeof res === "object", "that the middleware is passed the res object");
         assert(typeof next === "function", "that the middleware is next callback");
@@ -56,7 +56,6 @@ describe("shmock", function() {
     beforeEach(function() {
       mock.clean();
     });
-
 
     it("Should remove by default expectations after meeting them", function(done) {
       var handler = mock.get("/foo").reply(200);
@@ -120,13 +119,34 @@ describe("shmock", function() {
 
     it("Should match query parameters", function(done) {
       mock.post("/get")
-        .query({total: 10, limit: 1})
-        .query({foo: "bar"})
-        .query("a=b&c=d")
-        .query("x=y")
-        .reply(200);
+          .query({total: 10, limit: 1})
+          .query({foo: "bar"})
+          .query("a=b&c=d")
+          .query("x=y")
+          .reply(200);
 
-      test.post("/get").query({total: 10, limit: 1, foo: "bar", a: "b", c: "d", x: "y"}).expect(200, done);
+      test.post("/get").query({
+        total: 10,
+        limit: 1,
+        foo: "bar",
+        a: "b",
+        c: "d",
+        x: "y"
+      }).expect(200, done);
+    });
+
+    it("Should match query parameters in similar query", function(done) {
+      mock.post("/get").query({total: 10, limit: 1}).reply(200);
+      mock.post("/get").query({total: 11, limit: 1}).reply(200);
+      mock.post("/get").query({total: 12, limit: 1}).reply(200);
+
+      test.post("/get").query({total: 11, limit: 1}).expect(200, function() {
+        test.post("/get").query({total: 12, limit: 1}).expect(200, function() {
+          test.post("/get").query({total: 10,limit: 1}).expect(200, function() {
+            test.post("/get").query({total: 11, limit: 1}).expect(404, done);
+          });
+        });
+      });
     });
 
     it("Should fail if headers are not matched", function(done) {
@@ -143,7 +163,7 @@ describe("shmock", function() {
     });
 
     it("Should allow to specify response headers", function(done) {
-      mock.post("/get").reply(200,'Hello world',{'X-my-header':'My header value'});
+      mock.post("/get").reply(200, 'Hello world', {'X-my-header': 'My header value'});
 
       test.post("/get").expect('X-my-header', 'My header value').expect(200, done);
     });
@@ -152,7 +172,8 @@ describe("shmock", function() {
       var h = mock.get("/foo").reply(200);
 
       setTimeout(function() {
-        test.get("/foo").expect(200, function() {});
+        test.get("/foo").expect(200, function() {
+        });
       }, 20);
 
       h.wait(10, function(err) {
@@ -168,7 +189,8 @@ describe("shmock", function() {
       h.defaults.waitTimeout = 10;
 
       setTimeout(function() {
-        test.get("/foo").expect(200, function() {});
+        test.get("/foo").expect(200, function() {
+        });
       }, 20);
 
       h.wait(function(err) {
