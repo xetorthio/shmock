@@ -28,7 +28,7 @@ describe("shmock", function() {
     });
 
     it("Should accept an array of multiple middlewares", function (done) {
-      var mock = shmock(9090, [function (req, res, next) {
+      var mock = shmock(9091, [function (req, res, next) {
         assert(typeof req === "object", "that the middleware is passed the req object");
         assert(typeof res === "object", "that the middleware is passed the res object");
         assert(typeof next === "function", "that the middleware is next callback");
