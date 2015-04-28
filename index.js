@@ -4,6 +4,7 @@ var assert = require('assert');
 var querystring = require("querystring");
 var EventEmitter = require("events").EventEmitter;
 var util = require("util");
+var deepEqual = require('deep-equal');
 
 module.exports = function(port, middlewares) {
   var app = express();
@@ -61,8 +62,8 @@ function Assertion(app, method, path) {
   this.method = method;
   this.path = path;
   this.headers = {};
-  this.isDone = false;
   this.removeWhenMet = true;
+  this.raiseUnmatchedRequests();
 
   this.parseExpectedRequestBody = function() {
     if(!self.headers["content-type"]) {
@@ -100,7 +101,6 @@ Assertion.prototype.set = function(name, value) {
   return this;
 }
 
-
 Assertion.prototype.delay = function(ms) {
   this.delay_ms = ms;
   return this;
@@ -112,47 +112,80 @@ Assertion.prototype.persist = function() {
 }
 
 Assertion.prototype.reply = function(status, responseBody, responseHeaders) {
-  this.parseExpectedRequestBody();
-
   var self = this;
 
-  this.app[this.method](this.path, function(req, res) {
-    if(self.qs) {
-      assert.deepEqual(req.query, self.qs);
-    }
-    if(self.requestBody) {
-      if(req.text) {
-        assert.deepEqual(req.text, self.requestBody);
-      } else {
-        assert.deepEqual(req.body, self.requestBody);
-      }
-    }
-    for(var name in self.headers) {
-      assert.deepEqual(req.headers[name], self.headers[name]);
-    }
+  self.parseExpectedRequestBody();
+
+  self.app[self.method](self.path, function(req, res, next) {
+    
+    var assertionsPassed = self.testAssertions(req, next);
 
     if(responseHeaders) {
       res.set(responseHeaders);
     }
 
-    var reply = function() {
+    if (assertionsPassed) {
+      var reply = function() {
         self.handler.emit("done");
 
         // Remove route from express since the expectation was met
         // Unless this mock is suposed to persist
-        if (self.removeWhenMet) self.app._router.map[self.method].splice(req._route_index, 1);
+        if (self.removeWhenMet) {
+          self.app._router.map[self.method].splice(req._route_index, 1);
+        }
 
         res.status(status).send(responseBody);
       };
-    if(self.delay_ms) {
-      setTimeout(reply, self.delay_ms);
-    } else {
-      reply();
+
+      if(self.delay_ms) {
+        setTimeout(reply, self.delay_ms);
+      } else {
+        reply();
+      }
+    }
+    else {
+      self.handleUnmatchedRequest(next);
     }
   });
 
   this.handler = new Handler(this);
   return this.handler;
+}
+
+Assertion.prototype.testAssertions = function(req, next) {
+
+  var allPassed = true;
+
+  if(allPassed && this.qs) {
+    allPassed = deepEqual(req.query, this.qs);
+  }
+  if(allPassed && this.requestBody) {
+    if(req.text) {
+      allPassed = deepEqual(req.text, this.requestBody);
+    } else {
+      allPassed = deepEqual(req.body, this.requestBody);
+    }
+  }
+  for(var name in this.headers) {
+    if (allPassed) {
+      allPassed = deepEqual(req.headers[name], this.headers[name]);
+    }
+  }
+  return allPassed;
+}
+
+Assertion.prototype.skipUnmatchedRequests = function() {
+  this.handleUnmatchedRequest = function(next) {
+    next();
+  };
+  return this;
+}
+
+Assertion.prototype.raiseUnmatchedRequests = function() {
+  this.handleUnmatchedRequest = function(next) {
+    next(new Error("Unmatched request"));
+  };
+  return this;
 }
 
 function Handler(assertion) {
@@ -162,8 +195,10 @@ function Handler(assertion) {
   var self = this;
   this.assertion = assertion;
   this.isDone = false;
+  this.responseCount = 0;
   this.on("done", function() {
     self.isDone = true;
+    self.responseCount++;
   });
 }
 
@@ -173,6 +208,10 @@ Handler.prototype.done = function() {
   if(!this.isDone) {
     throw new Error(this.assertion.method + " " + this.assertion.path + " was not made yet.");
   }
+}
+
+Handler.prototype.count = function() {
+  return this.responseCount;
 }
 
 Handler.prototype.wait = function(ms, fn) {
