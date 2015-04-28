@@ -191,5 +191,60 @@ describe("shmock", function() {
         });
       });
     });
+
+    it("Should lazily evaluate a response body function", function(done) {
+
+      var responseBodyFunction = function() {
+        return {
+          time: new Date().getTime()
+        }
+      };
+
+      mock.get("/time").reply(200, responseBodyFunction);
+
+      test.get("/time").expect(200).end(function(error, response) {
+        var firstTime = response.body.time;
+        test.get("/time").expect(200).end(function(error, response) {
+            var secondTime = response.body.time;
+            assert.notEqual(firstTime, secondTime, "Response body function was supposed to be lazily evaluated and to produce separate responses on separate invocations");
+            done();
+        });
+      });
+    });
+
+    describe("skipUnmatchedRequests mode: ", function() {
+      it("Should pass unmatched requests to the next handler", function(done) {
+
+        mock.post("/get_query").skipUnmatchedRequests()
+          .persist().query({param1: "request1"})
+          .reply(200, {name: "response1"});
+
+        mock.post("/get_query").skipUnmatchedRequests()
+          .persist().query({param1: "request2"})
+          .reply(200, {name: "response2"});
+
+        test.post("/get_query").query({param1: "request1"}).expect(200).end(function(error, response) {
+          response.body.name.should.equal("response1");
+        });
+    
+        test.post("/get_query").query({param1: "request2"}).expect(200).end(function(error, response) {
+          response.body.name.should.equal("response2");
+          done();
+        });
+
+      });
+
+      it("Should return 404 if no handler matches", function(done) {
+
+        mock.post("/get_query").skipUnmatchedRequests()
+          .persist().query({param1: "request1"})
+          .reply(200, {name: "response1"});
+
+        test.post("/get_query").query({param1: "unmatched"}).expect(404).end(function(error, response) {
+          response.status.should.equal(404);
+          done();
+        });
+      });
+    });
   });
 });
