@@ -90,7 +90,7 @@ Assertion.prototype.query = function(qs) {
     this.qs = {};
   }
   for(var n in q) {
-    this.qs[n] = "" + q[n];
+    this.qs[n] = q[n];
   }
   return this;
 }
