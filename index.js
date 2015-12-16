@@ -1,6 +1,6 @@
 var express = require("express");
 var methods = require("methods");
-var assert = require('assert');
+var assert = require('assert-diff');
 var querystring = require("querystring");
 var EventEmitter = require("events").EventEmitter;
 var util = require("util");

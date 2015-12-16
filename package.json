@@ -9,6 +9,7 @@
     "mock"
   ],
   "dependencies": {
+    "assert-diff": "^1.0.1",
     "express": "~3.4.8",
     "methods": "~0.1.0"
   },
