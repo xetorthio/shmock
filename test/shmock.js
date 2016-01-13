@@ -28,7 +28,7 @@ describe("shmock", function() {
     });
 
     it("Should accept an array of multiple middlewares", function (done) {
-      var mock = shmock(9090, [function (req, res, next) {
+      var mock = shmock(9091, [function (req, res, next) {
         assert(typeof req === "object", "that the middleware is passed the req object");
         assert(typeof res === "object", "that the middleware is passed the res object");
         assert(typeof next === "function", "that the middleware is next callback");
@@ -188,6 +188,26 @@ describe("shmock", function() {
 
           mock.get("/foobar").reply(200);
           test.get("/foobar").timeout(10).expect(200, done);
+        });
+      });
+    });
+
+    it("Should lazily evaluate a response body function", function(done) {
+
+      var responseBodyFunction = function() {
+        return {
+          time: new Date().getTime()
+        }
+      };
+
+      mock.get("/time").reply(200, responseBodyFunction);
+
+      test.get("/time").expect(200).end(function(error, response) {
+        var firstTime = response.body.time;
+        test.get("/time").expect(200).end(function(error, response) {
+            var secondTime = response.body.time;
+            assert.notEqual(firstTime, secondTime, "Response body function was supposed to be lazily evaluated and to produce separate responses on separate invocations");
+            done();
         });
       });
     });
