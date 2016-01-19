@@ -1,6 +1,6 @@
 {
   "name": "shmock",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "description": "Simple HTTP Mocking library",
   "keywords": [
     "express",
