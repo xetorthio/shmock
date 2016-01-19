@@ -143,7 +143,7 @@ Assertion.prototype.reply = function(status, responseBody, responseHeaders) {
         if (self.removeWhenMet) self.app._router.map[self.method].splice(req._route_index, 1);
 
         if (typeof responseBody === 'function') {
-          res.status(status).send(responseBody());
+          res.status(status).send(responseBody(req));
         } else {
           res.status(status).send(responseBody);
         }
