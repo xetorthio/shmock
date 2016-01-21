@@ -100,6 +100,14 @@ Or if using mocha:
 ```js
 handler.wait(200, done);
 ```
+### Persist handlers between tests
+
+By default shock will unregister the mock handler once they have been invoked. If for some reason you need to keep them for more than one use, you can specify it as follows:
+
+```js
+mock.get("/foo").persist().reply(200);
+```
+
 
 ### Custom middleware
 Custom middlewares can be injected into the Express stack in order to perform arbitrary manipulations on mock requests, for instance:
