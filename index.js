@@ -108,7 +108,7 @@ Assertion.prototype.reply = function(status, responseBody) {
   self.parseExpectedRequestBody();
 
   self.app[self.method](self.path, function(req, res, next) {
-    
+
     var assertionsPassed = self.testAssertions(req, next);
 
     if (assertionsPassed) {
@@ -120,7 +120,7 @@ Assertion.prototype.reply = function(status, responseBody) {
       }
 
       var reply = function() {
-        self.handler.emit("done");
+        self.handler.emit("done", req.url);
         res.status(status).send(responseBody);
       };
 
@@ -183,9 +183,11 @@ function Handler(assertion) {
   this.assertion = assertion;
   this.isDone = false;
   this.responseCount = 0;
-  this.on("done", function() {
+  this.completedUrlsList = []
+  this.on("done", function(requestedUrl) {
     self.isDone = true;
     self.responseCount++;
+    self.completedUrlsList.push(requestedUrl);
   });
 }
 
@@ -199,6 +201,10 @@ Handler.prototype.done = function() {
 
 Handler.prototype.count = function() {
   return this.responseCount;
+}
+
+Handler.prototype.completedUrls = function() {
+  return this.completedUrlsList;
 }
 
 Handler.prototype.wait = function(ms, fn) {
