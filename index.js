@@ -27,6 +27,14 @@ module.exports = function(port) {
     }
   });
 
+  if (process.env.DEBUG) {
+    app.use(function(req,res,next){
+      console.log("Received " + req.method + " to " + req.url + ". req.body: ");
+      console.log(JSON.stringify(req.body, {}, 2));
+      next();
+    })
+  }
+
   var server;
   if(port) {
     server = app.listen(port);
@@ -55,6 +63,7 @@ function Assertion(app, method, path) {
   this.headers = {};
   this.removeWhenMet = true;
   this.raiseUnmatchedRequests();
+  this.unmetAction = 'Throwing';
 
   this.parseExpectedRequestBody = function() {
     if(!self.headers["content-type"]) {
@@ -120,6 +129,11 @@ Assertion.prototype.reply = function(status, responseBody) {
       }
 
       var reply = function() {
+        if (process.env.DEBUG) {
+          console.log("Responding to " + self.method.toUpperCase() + " to " + req.url + " with: ");
+          console.log(JSON.stringify(responseBody, {}, 2));
+        }
+
         self.handler.emit("done", req.url);
         res.status(status).send(responseBody);
       };
@@ -131,6 +145,7 @@ Assertion.prototype.reply = function(status, responseBody) {
       }
     }
     else {
+      console.log("Assertions for " + self.method.toUpperCase() + " to " + req.url + " were not met. " + self.unmetAction);
       self.handleUnmatchedRequest(next);
     }
   });
@@ -162,6 +177,7 @@ Assertion.prototype.testAssertions = function(req, next) {
 }
 
 Assertion.prototype.skipUnmatchedRequests = function() {
+  this.unmetAction = 'Skipping';
   this.handleUnmatchedRequest = function(next) {
     next();
   };
